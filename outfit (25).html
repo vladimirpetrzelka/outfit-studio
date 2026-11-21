@@ -1,0 +1,953 @@
+<title>Outfit Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400;500;600&display=swap">
+
+<style>
+  :root {
+    --bg: #f7f5f2;
+    --surface: #ffffff;
+    --border: #e8e3dc;
+    --ink: #1a1817;
+    --ink-soft: #6b6560;
+    --accent: #c9956a;
+    --accent-dark: #a67a52;
+    --accent-light: #f5ede5;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1817; --surface: #232120; --border: #3a3734;
+      --ink: #f0ece6; --ink-soft: #9a948e;
+      --accent: #d4a07a; --accent-dark: #b8855f; --accent-light: #2a211a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1817; --surface: #232120; --border: #3a3734;
+    --ink: #f0ece6; --ink-soft: #9a948e;
+    --accent: #d4a07a; --accent-dark: #b8855f; --accent-light: #2a211a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    padding-bottom: 40px;
+  }
+  @media (max-width: 680px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { display: flex; flex-direction: column; gap: 16px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+
+  /* Foto upload via drag & drop / paste */
+  .photo-drop {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    cursor: default;
+  }
+
+  .photo-drop.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .photo-drop.has-photo { border-style: solid; border-color: var(--border); }
+
+  .photo-drop img.preview {
+    image-orientation: from-image;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  .drop-hint {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    line-height: 1.6;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .drop-icon { font-size: 2rem; margin-bottom: 4px; }
+
+  .change-hint {
+    text-align: center;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
+  /* URL vstup */
+  .add-hint {
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    padding: 6px 10px;
+    background: var(--accent-light);
+    border-radius: 6px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .input-row { display: flex; gap: 6px; margin-bottom: 6px; }
+
+  .url-input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 0;
+  }
+  .url-input:focus { border-color: var(--accent); }
+  .url-input::placeholder { color: var(--ink-soft); }
+
+  .cat-select {
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .btn-add {
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-add:hover { background: var(--accent); color: #fff; }
+
+  .products-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+
+  .product-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .product-icon {
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  .product-info { flex: 1; min-width: 0; }
+  .product-name { font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .product-domain { font-size: 0.7rem; color: var(--ink-soft); }
+  .product-cat { display: inline-block; font-size: 0.65rem; padding: 1px 6px; border-radius: 4px; background: var(--accent-light); color: var(--accent-dark); margin-top: 2px; }
+
+  .btn-remove {
+    background: none; border: none;
+    color: var(--ink-soft); cursor: pointer;
+    font-size: 1rem; padding: 4px; border-radius: 4px;
+    flex-shrink: 0; transition: color 0.2s;
+  }
+  .btn-remove:hover { color: #c0392b; }
+
+  .btn-generate {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-generate:hover { background: var(--accent-dark); }
+  .btn-generate:disabled { background: var(--border); color: var(--ink-soft); cursor: not-allowed; }
+
+  /* Pravý panel */
+  .result-area { display: flex; flex-direction: column; gap: 16px; }
+
+  .outfit-canvas {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    min-height: 300px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .outfit-empty { text-align: center; color: var(--ink-soft); }
+  .outfit-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+  .outfit-empty h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 6px; color: var(--ink); }
+  .outfit-empty p { font-size: 0.82rem; line-height: 1.6; max-width: 240px; }
+
+  .outfit-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+
+  .outfit-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; }
+
+  .btn-save {
+    padding: 8px 16px;
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    background: none;
+    color: var(--accent-dark);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .btn-save:hover { background: var(--accent); color: #fff; }
+
+  .collage-wrap { width: 100%; }
+
+  .collage-top {
+    display: flex; gap: 12px; margin-bottom: 12px;
+  }
+
+  .collage-person {
+    width: 180px; flex-shrink: 0;
+    border-radius: 10px; overflow: hidden;
+    aspect-ratio: 3/4; background: var(--border);
+  }
+  .collage-person img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .collage-items {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    align-content: start;
+  }
+
+  .collage-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    text-align: center;
+  }
+
+  .collage-item-img {
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
+    background: var(--surface);
+    display: block;
+  }
+
+  .collage-item-icon {
+    height: 180px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem;
+    background: var(--accent-light);
+  }
+
+  .collage-item-info {
+    padding: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .collage-item a {
+    font-size: 0.65rem;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 3px 8px;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
+
+  .collage-footer {
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .saved-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+  }
+
+  .saved-outfit {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .saved-outfit:hover { border-color: var(--accent); }
+
+  .saved-thumb {
+    aspect-ratio: 1; background: var(--bg);
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2px; padding: 4px;
+  }
+
+  .saved-thumb > div {
+    border-radius: 3px; background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; aspect-ratio: 1;
+  }
+
+  .saved-name {
+    font-size: 0.7rem; padding: 5px 7px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .no-saved { color: var(--ink-soft); font-size: 0.8rem; text-align: center; padding: 16px; }
+
+  .err { border-color: #c0392b !important; }
+
+  .product-thumb-img {
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+</style>
+
+<header>
+  <div class="logo">Outfit <span>Studio</span></div>
+  <div class="tagline">Poskládej svůj styl</div>
+</header>
+
+<div class="layout">
+  <aside class="panel">
+
+    <!-- Fotka -->
+    <div class="card">
+      <div class="card-title">Tvoje fotka</div>
+      <div class="photo-drop" id="photoDrop">
+        <div class="drop-hint" id="dropHint">
+          <div class="drop-icon">🧍</div>
+          <div style="font-weight:600;">Přetáhni fotku sem</div>
+          <div style="font-size:0.7rem;margin-top:4px;">nebo zkopíruj fotku (Ctrl+C)<br>a vlož sem (Ctrl+V)</div>
+          <div style="font-size:0.7rem;margin-top:6px;color:var(--accent);">celé tělo, neutrální pozadí</div>
+        </div>
+      </div>
+      <input type="file" id="photoFileInput" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="display:none">
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button id="btnCameraPhoto" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);cursor:pointer;font-size:0.85rem;">📷 Vyfotit</button>
+        <button id="btnUploadPhoto" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg);cursor:pointer;font-size:0.85rem;">🖼️ Nahrát</button>
+        <button id="btnDeletePhoto" hidden style="flex-shrink:0;padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:#e53;cursor:pointer;font-size:0.85rem;">🗑️</button>
+      </div>
+      <!-- Kamera overlay -->
+      <div id="cameraOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:1000;flex-direction:column;align-items:center;justify-content:center;">
+        <video id="cameraVideo" autoplay playsinline style="width:100%;max-height:75vh;object-fit:contain;"></video>
+        <div style="display:flex;gap:12px;margin-top:16px;align-items:center;">
+          <button id="btnCameraClose" style="padding:12px 20px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:50px;font-size:1rem;cursor:pointer;">✕</button>
+          <button id="btnCapture" style="padding:16px 36px;background:white;border:none;border-radius:50px;font-size:1.1rem;cursor:pointer;">📸 Vyfotit</button>
+          <button id="btnFlipCamera" style="padding:12px 20px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:50px;font-size:1rem;cursor:pointer;">🔄</button>
+        </div>
+      </div>
+      <canvas id="cameraCanvas" hidden></canvas>
+      <div class="change-hint" id="changeHint" hidden>Přetáhni nebo vlož (Ctrl+V) pro změnu</div>
+    </div>
+
+    <!-- Produkty -->
+    <div class="card">
+      <div class="card-title">Oblečení z e-shopů</div>
+      <div class="add-hint">Vlož URL produktu z libovolného e-shopu</div>
+      <div class="input-row">
+        <input type="text" class="url-input" id="urlInput" placeholder="https://www.zara.com/...">
+        <select class="cat-select" id="catSelect">
+          <option value="vrchní díl">👕 Triko</option>
+          <option value="spodní díl">👖 Kalhoty</option>
+          <option value="svrchní">🧥 Bunda</option>
+          <option value="obuv">👟 Boty</option>
+          <option value="doplněk">👜 Doplněk</option>
+          <option value="šaty">👗 Šaty</option>
+        </select>
+      </div>
+      <button class="btn-add" id="btnAdd">+ Přidat produkt</button>
+      <div class="products-list" id="productsList"></div>
+    </div>
+
+    <button class="btn-generate" id="btnGenerate" disabled>✨ Sestavit outfit</button>
+
+  </aside>
+
+  <main class="result-area">
+    <div class="card">
+      <div id="outfitTitleRow" class="outfit-title-row" hidden>
+        <div class="outfit-title">Můj outfit</div>
+        <button class="btn-save" id="btnSave">💾 Uložit</button>
+      </div>
+      <div class="outfit-canvas" id="outfitCanvas">
+        <div class="outfit-empty">
+          <div class="outfit-empty-icon">👗</div>
+          <h3>Tvůj outfit se zobrazí zde</h3>
+          <p>Nahraj fotku a přidej produkty z e-shopů, pak klikni Sestavit outfit.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Uložené outfity</div>
+      <div id="savedGrid" class="saved-grid">
+        <div class="no-saved">Zatím žádné uložené outfity</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var products = [];
+  var photoSrc = null;
+  var savedOutfits = [];
+
+  try {
+    var s = localStorage.getItem('os_saved');
+    if (s) savedOutfits = JSON.parse(s);
+  } catch(e) {}
+
+  renderSaved();
+
+  // Fotka — drag & drop
+  var drop = document.getElementById('photoDrop');
+
+  drop.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    drop.classList.add('drag-over');
+  });
+  drop.addEventListener('dragleave', function() {
+    drop.classList.remove('drag-over');
+  });
+  drop.addEventListener('drop', function(e) {
+    e.preventDefault();
+    drop.classList.remove('drag-over');
+    var file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadPhotoFile(file);
+  });
+
+  // Tlačítka pro nahrání a kameru
+  var photoFileInput = document.getElementById('photoFileInput');
+  photoFileInput.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) loadPhotoFile(file);
+    photoFileInput.value = '';
+  });
+  // Skryj "Nahrát" na mobilech — tam stačí kamera
+  if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    document.getElementById('btnUploadPhoto').hidden = true;
+  }
+  document.getElementById('btnUploadPhoto').addEventListener('click', function() {
+    photoFileInput.click();
+  });
+
+  // Kamera přes getUserMedia
+  var cameraStream = null;
+  var cameraFacing = 'environment'; // začni zadní kamerou
+  var cameraOverlay = document.getElementById('cameraOverlay');
+  var cameraVideo = document.getElementById('cameraVideo');
+  var cameraCanvas = document.getElementById('cameraCanvas');
+
+  function startCamera(facing) {
+    cameraFacing = facing;
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function(t) { t.stop(); });
+      cameraStream = null;
+      cameraVideo.srcObject = null;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: cameraFacing } }, audio: false })
+      .then(function(stream) {
+        cameraStream = stream;
+        cameraVideo.srcObject = stream;
+        cameraOverlay.style.display = 'flex';
+      })
+      .catch(function() {
+        cameraOverlay.style.display = 'none';
+        photoFileInput.click();
+      });
+  }
+
+  document.getElementById('btnCameraPhoto').addEventListener('click', function() {
+    startCamera('environment');
+  });
+
+  document.getElementById('btnFlipCamera').addEventListener('click', function() {
+    startCamera(cameraFacing === 'environment' ? 'user' : 'environment');
+  });
+
+  document.getElementById('btnCapture').addEventListener('click', function() {
+    cameraCanvas.width = cameraVideo.videoWidth;
+    cameraCanvas.height = cameraVideo.videoHeight;
+    cameraCanvas.getContext('2d').drawImage(cameraVideo, 0, 0);
+    var dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.92);
+    stopCamera();
+    setPhoto(dataUrl);
+  });
+
+  document.getElementById('btnCameraClose').addEventListener('click', stopCamera);
+
+  function stopCamera() {
+    if (cameraStream) { cameraStream.getTracks().forEach(function(t) { t.stop(); }); cameraStream = null; }
+    cameraVideo.srcObject = null;
+    cameraOverlay.style.display = 'none';
+  }
+
+  // Fotka — paste (Ctrl+V)
+  document.addEventListener('paste', function(e) {
+    var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        loadPhotoFile(items[i].getAsFile());
+        break;
+      }
+    }
+  });
+
+  function getExifOrientation(buffer) {
+    var view = new DataView(buffer);
+    if (view.getUint16(0, false) !== 0xFFD8) return 1;
+    var offset = 2;
+    while (offset < view.byteLength - 4) {
+      var marker = view.getUint16(offset, false);
+      var segLen = view.getUint16(offset + 2, false);
+      if (marker === 0xFFE1 && view.getUint32(offset + 4, false) === 0x45786966) {
+        var tiffOffset = offset + 10;
+        var little = view.getUint16(tiffOffset, false) === 0x4949;
+        var ifdOffset = view.getUint32(tiffOffset + 4, little);
+        var tags = view.getUint16(tiffOffset + ifdOffset, little);
+        for (var i = 0; i < tags; i++) {
+          var tagOffset = tiffOffset + ifdOffset + 2 + i * 12;
+          if (view.getUint16(tagOffset, little) === 0x0112) {
+            return view.getUint16(tagOffset + 8, little);
+          }
+        }
+      }
+      offset += 2 + segLen;
+    }
+    return 1;
+  }
+
+  function loadPhotoFile(file) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var orientation = getExifOrientation(ev.target.result);
+      var url = URL.createObjectURL(new Blob([ev.target.result], { type: file.type }));
+      var img = new Image();
+      img.onload = function() {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var c = document.createElement('canvas');
+        var ctx = c.getContext('2d');
+        // Orientace 6 = fotka pořízená mobilem na výšku (EXIF říká: otoč 90° CW)
+        // Orientace 8 = otoč 90° CCW
+        // Orientace 3 = otoč 180°
+        if (orientation === 6 || orientation === 5) {
+          c.width = h; c.height = w;
+          ctx.translate(h, 0); ctx.rotate(Math.PI / 2);
+        } else if (orientation === 8 || orientation === 7) {
+          c.width = h; c.height = w;
+          ctx.translate(0, w); ctx.rotate(-Math.PI / 2);
+        } else if (orientation === 3 || orientation === 4) {
+          c.width = w; c.height = h;
+          ctx.translate(w, h); ctx.rotate(Math.PI);
+        } else {
+          c.width = w; c.height = h;
+        }
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        setPhoto(c.toDataURL('image/jpeg', 0.92));
+      };
+      img.onerror = function() {
+        URL.revokeObjectURL(url);
+        var fr = new FileReader();
+        fr.onload = function(e2) { setPhoto(e2.target.result); };
+        fr.readAsDataURL(file);
+      };
+      img.src = url;
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function setPhoto(src) {
+    photoSrc = src;
+    var hint = document.getElementById('dropHint');
+    var old = drop.querySelector('img.preview');
+    if (old) drop.removeChild(old);
+    var img = document.createElement('img');
+    img.className = 'preview';
+    img.src = photoSrc;
+    drop.appendChild(img);
+    drop.classList.add('has-photo');
+    hint.hidden = true;
+    document.getElementById('changeHint').hidden = false;
+    document.getElementById('btnDeletePhoto').hidden = false;
+    checkReady();
+  }
+
+  document.getElementById('btnDeletePhoto').addEventListener('click', function() {
+    photoSrc = null;
+    var old = drop.querySelector('img.preview');
+    if (old) drop.removeChild(old);
+    drop.classList.remove('has-photo');
+    document.getElementById('dropHint').hidden = false;
+    document.getElementById('changeHint').hidden = true;
+    document.getElementById('btnDeletePhoto').hidden = true;
+    checkReady();
+  });
+
+  // Přidat produkt
+  document.getElementById('btnAdd').addEventListener('click', addProduct);
+  document.getElementById('urlInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addProduct();
+  });
+
+  var WORKER = 'https://outfit-proxy.vladimir-petrzelka.workers.dev';
+
+  // Routuj obrázky z e-shopů přes worker proxy (obchází hotlink ochranu)
+  function proxyImg(imgUrl) {
+    if (!imgUrl) return imgUrl;
+    // Data URI nebo blob — nezpracovávat
+    if (imgUrl.startsWith('data:') || imgUrl.startsWith('blob:')) return imgUrl;
+    return WORKER + '/img?url=' + encodeURIComponent(imgUrl);
+  }
+
+  function addProduct() {
+    var raw = document.getElementById('urlInput').value.trim();
+    var cat = document.getElementById('catSelect').value;
+    var input = document.getElementById('urlInput');
+
+    if (!raw) { flash(input); return; }
+
+    var url = raw;
+    if (!url.match(/^https?:\/\//)) url = 'https://' + url;
+
+    var domain = '';
+    try { domain = new URL(url).hostname.replace('www.', ''); } catch(e) { domain = url.substring(0,30); }
+
+    var product = {
+      id: Date.now(),
+      url: url,
+      cat: cat,
+      domain: domain,
+      name: nameFromCat(cat),
+      image: null,
+      loading: true
+    };
+
+    products.push(product);
+    input.value = '';
+    renderProducts();
+    checkReady();
+
+    // Načti metadata z Workeru
+    fetch(WORKER + '?url=' + encodeURIComponent(url))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var p = products.find(function(x) { return x.id === product.id; });
+        if (!p) return;
+        p.loading = false;
+        if (data.image) { p.imageOrig = data.image; p.image = proxyImg(data.image); }
+        if (data.title) p.name = data.title.substring(0, 50);
+        if (data.price) p.price = data.price;
+        renderProducts();
+      })
+      .catch(function() {
+        var p = products.find(function(x) { return x.id === product.id; });
+        if (p) { p.loading = false; renderProducts(); }
+      });
+  }
+
+  function nameFromCat(cat) {
+    var m = { 'vrchní díl':'Triko/Košile', 'spodní díl':'Kalhoty/Sukně', 'svrchní':'Bunda/Kabát', 'obuv':'Boty', 'doplněk':'Doplněk', 'šaty':'Šaty/Overal' };
+    return m[cat] || cat;
+  }
+
+  function catIcon(cat) {
+    var m = { 'vrchní díl':'👕', 'spodní díl':'👖', 'svrchní':'🧥', 'obuv':'👟', 'doplněk':'👜', 'šaty':'👗' };
+    return m[cat] || '🛍️';
+  }
+
+  function flash(el) {
+    el.classList.add('err');
+    setTimeout(function() { el.classList.remove('err'); }, 1200);
+  }
+
+  function removeProduct(id) {
+    products = products.filter(function(p) { return p.id !== id; });
+    renderProducts();
+    checkReady();
+  }
+
+  function renderProducts() {
+    var list = document.getElementById('productsList');
+    if (!products.length) { list.innerHTML = ''; return; }
+    list.innerHTML = products.map(function(p) {
+      var thumb = p.loading
+        ? '<div class="product-icon" style="font-size:0.6rem;color:var(--ink-soft);">…</div>'
+        : p.image
+          ? '<img class="product-thumb-img" src="' + esc(p.image) + '" alt="">'
+          : '<div class="product-icon">' + catIcon(p.cat) + '</div>';
+      var priceHtml = p.price ? '<span style="font-size:0.7rem;color:var(--accent-dark);font-weight:600;">' + esc(p.price) + ' Kč</span>' : '';
+      return '<div class="product-item">' +
+        thumb +
+        '<div class="product-info">' +
+          '<div class="product-name">' + esc(p.name) + '</div>' +
+          '<div class="product-domain">' + esc(p.domain) + '</div>' +
+          '<span class="product-cat">' + esc(p.cat) + '</span>' +
+          priceHtml +
+        '</div>' +
+        '<button class="btn-remove" data-id="' + p.id + '">✕</button>' +
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.btn-remove').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        removeProduct(Number(btn.dataset.id));
+      });
+    });
+  }
+
+  function checkReady() {
+    var btn = document.getElementById('btnGenerate');
+    btn.disabled = !(photoSrc && products.length > 0);
+  }
+
+  // Sestavit outfit
+  document.getElementById('btnGenerate').addEventListener('click', function() {
+    var canvas = document.getElementById('outfitCanvas');
+    canvas.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--ink-soft);"><div style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div> Sestavuji…</div>';
+    setTimeout(renderCollage, 600);
+  });
+
+  function renderCollage() {
+    var canvas = document.getElementById('outfitCanvas');
+    var titleRow = document.getElementById('outfitTitleRow');
+
+    var items = products.map(function(p) {
+      var imgHtml = p.image
+        ? '<img class="collage-item-img" src="' + esc(p.image) + '" alt="">'
+        : '<div class="collage-item-icon">' + catIcon(p.cat) + '</div>';
+      return '<div class="collage-item">' +
+        imgHtml +
+        '<div class="collage-item-info">' +
+          '<div style="font-size:0.7rem;color:var(--ink-soft);">' + esc(p.domain) + '</div>' +
+          '<span style="font-size:0.7rem;font-weight:500;">' + esc(p.cat) + '</span>' +
+          '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">Zobrazit v e-shopu →</a>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // Tlačítka try-on pro produkty které mají obrázek
+    var tryonBtns = products.filter(function(p) { return p.image; }).map(function(p) {
+      var catMap = { 'vrchní díl':'upper_body', 'spodní díl':'lower_body', 'šaty':'dresses', 'svrchní':'upper_body', 'obuv':'', 'doplněk':'' };
+      var cat = catMap[p.cat] || 'upper_body';
+      if (!cat) return ''; // boty a doplňky try-on nepodporuje
+      return '<button class="btn-tryon" data-pid="' + p.id + '" data-cat="' + cat + '" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;">👗 Vyzkoušet: ' + esc(p.name.substring(0,20)) + '</button>';
+    }).filter(Boolean).join('');
+
+    canvas.innerHTML = '<div class="collage-wrap">' +
+      '<div class="collage-top">' +
+        '<div class="collage-person"><img id="tryonResultImg" src="' + photoSrc + '" alt="Tvoje fotka"></div>' +
+        '<div class="collage-items">' + items + '</div>' +
+      '</div>' +
+      (tryonBtns ? '<div style="padding:12px 0 4px;display:flex;flex-wrap:wrap;gap:8px;">' + tryonBtns + '</div>' : '') +
+      '<div class="collage-footer" id="tryonStatus">Klikni na „Vyzkoušet" pro AI virtual try-on oblečení na tvé fotce.</div>' +
+    '</div>';
+
+    // Try-on click handlery
+    canvas.querySelectorAll('.btn-tryon').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var pid = Number(btn.dataset.pid);
+        var cat = btn.dataset.cat;
+        var p = products.find(function(x) { return x.id === pid; });
+        if (!p || !p.image) return;
+        startTryOn(p, cat);
+      });
+    });
+
+    titleRow.hidden = false;
+  }
+
+  // Virtual try-on
+  function startTryOn(product, category) {
+    var status = document.getElementById('tryonStatus');
+    var resultImg = document.getElementById('tryonResultImg');
+    if (!status || !resultImg) return;
+
+    status.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;"><span style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;"></span> AI zpracovává try-on… (20–60 sekund)</span>';
+
+    // Deaktivuj tlačítka
+    document.querySelectorAll('.btn-tryon').forEach(function(b) { b.disabled = true; });
+
+    fetch(WORKER + '/tryon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        human_img: photoSrc,
+        garm_img: product.imageOrig || product.image,
+        garment_des: product.name || 'clothing item',
+        category: category,
+      }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.querySelectorAll('.btn-tryon').forEach(function(b) { b.disabled = false; });
+      if (data.result) {
+        resultImg.src = data.result;
+        status.innerHTML = '✅ Try-on hotovo! <button onclick="document.getElementById(\'tryonResultImg\').src=\'' + photoSrc + '\'" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.78rem;text-decoration:underline;">Zobrazit originál</button>';
+      } else {
+        status.textContent = '❌ Chyba: ' + (data.error || 'Neznámá chyba');
+      }
+    })
+    .catch(function(e) {
+      document.querySelectorAll('.btn-tryon').forEach(function(b) { b.disabled = false; });
+      status.textContent = '❌ Chyba připojení: ' + e.message;
+    });
+  }
+
+  // Uložit
+  document.getElementById('btnSave').addEventListener('click', function() {
+    if (!photoSrc || !products.length) return;
+    savedOutfits.unshift({ id: Date.now(), name: 'Outfit ' + (savedOutfits.length + 1), photo: photoSrc, products: products.slice() });
+    try { localStorage.setItem('os_saved', JSON.stringify(savedOutfits.slice(0, 20))); } catch(e) {}
+    renderSaved();
+  });
+
+  function renderSaved() {
+    var grid = document.getElementById('savedGrid');
+    if (!savedOutfits.length) { grid.innerHTML = '<div class="no-saved">Zatím žádné uložené outfity</div>'; return; }
+    grid.innerHTML = savedOutfits.map(function(o) {
+      var icons = o.products.slice(0, 4).map(function(p) {
+        return '<div>' + catIcon(p.cat) + '</div>';
+      }).join('');
+      return '<div class="saved-outfit" data-id="' + o.id + '">' +
+        '<div class="saved-thumb">' + icons + '</div>' +
+        '<div class="saved-name">' + esc(o.name) + '</div>' +
+      '</div>';
+    }).join('');
+    grid.querySelectorAll('.saved-outfit').forEach(function(el) {
+      el.addEventListener('click', function() { loadOutfit(Number(el.dataset.id)); });
+    });
+  }
+
+  function loadOutfit(id) {
+    var o = savedOutfits.find(function(x) { return x.id === id; });
+    if (!o) return;
+    photoSrc = o.photo;
+    products = o.products.slice();
+
+    var drop = document.getElementById('photoDrop');
+    var hint = document.getElementById('dropHint');
+    var old = drop.querySelector('img.preview');
+    if (old) drop.removeChild(old);
+    var img = document.createElement('img');
+    img.className = 'preview';
+    img.src = photoSrc;
+    drop.appendChild(img);
+    drop.classList.add('has-photo');
+    hint.hidden = true;
+    document.getElementById('changeHint').hidden = false;
+
+    renderProducts();
+    checkReady();
+    renderCollage();
+    document.getElementById('outfitTitleRow').hidden = false;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+})();
+</script>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
